@@ -1,0 +1,25 @@
+# Pipeline
+stages:
+  - test
+  - mirror
+
+# Testing
+test:
+  stage: test
+  image: python:3.9
+  script:
+    - pip install -r requirements.txt
+    - python -m unittest discover -s tests  # Testes com UnitTest
+  rules:
+    - if: '$CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE == "push"'
+
+# Mirroring on Github
+mirror:
+  stage: mirror
+  script:
+    - export REPO_NAME=$(echo $CI_PROJECT_PATH | cut -d'/' -f2)
+    - git remote add github https://${GITHUB_TOKEN}@github.com/rmottanet/$REPO_NAME.git
+    - git checkout -b main
+    - git push --set-upstream github main
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main" && $CI_COMMIT_MESSAGE =~ /Merge branch/i'
